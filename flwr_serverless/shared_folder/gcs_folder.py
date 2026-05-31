@@ -132,3 +132,7 @@ class GCSFolderWithPickle:
     def get_parameter(self, filepath):
         model_key = filepath.split("/")[-1].replace(self.suffix, "")
         return model_key, self.get(model_key)
+    
+    def get_raw_folder(self):
+        """Retorna o próprio objeto como 'raw folder' para salvar métricas."""
+        return self
