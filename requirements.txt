@@ -3,3 +3,4 @@ python-dotenv
 tensorflow
 wandb
 keras-cv
+google-cloud-storage
