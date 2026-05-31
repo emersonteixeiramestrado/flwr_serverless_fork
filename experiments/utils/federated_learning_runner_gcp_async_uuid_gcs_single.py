@@ -178,12 +178,15 @@ class FederatedLearningRunner(BaseExperimentRunner):
         # lê faixa de delay configurada a partir do speed_group
         delay_s_min = getattr(self.config, "delay_s_min", 0)
         delay_s_max = getattr(self.config, "delay_s_max", 2)
+        
+        
 
         for round_idx in range(self.num_rounds):
             callbacks = [
                 FlwrFederatedCallback(
                     node,
-                    num_examples_per_epoch=self.steps_per_epoch * self.batch_size,
+                    num_examples_per_epoch=(self.steps_per_epoch * self.batch_size),
+                    global_epoch=round_idx,
                 ),
                 NodeEpochLogger(
                     node_id=self.node_uuid,

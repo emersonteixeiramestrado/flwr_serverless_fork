@@ -30,6 +30,7 @@ class FlwrFederatedCallback(keras.callbacks.Callback):
         override_metrics_with_aggregated_metrics: bool = False,
         save_model_before_aggregation: bool = False,
         save_model_after_aggregation: bool = False,
+        global_epoch: int = None, 
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -58,7 +59,8 @@ class FlwrFederatedCallback(keras.callbacks.Callback):
             "keras/{node_id}/metrics_after_aggregation_{epoch:05d}.json"
         )
         self._federated_metrics = {}
-
+        self.global_epoch = global_epoch
+        
     def _save_model_to_shared_folder(self, filename: str):
         folder = self.node.model_store.get_raw_folder()
         key = filename
@@ -124,9 +126,11 @@ class FlwrFederatedCallback(keras.callbacks.Callback):
         # use the P2PStrategy to update the model.
         node_id = self.node.node_id
         LOGGER.info(f"[flwr_serverless] on_epoch_end, logs={logs}")
+        
+        effective_epoch = self.global_epoch if self.global_epoch is not None else epoch
 
-        self._save_metrics_before_aggregation(logs, node_id, epoch)
-        self._save_model_before_aggregation(node_id, epoch)
+        self._save_metrics_before_aggregation(logs, node_id, effective_epoch)
+        self._save_model_before_aggregation(node_id, effective_epoch)
 
         params: Parameters = ndarrays_to_parameters(self.model.get_weights())
         if self.override_metrics_with_aggregated_metrics:
@@ -141,12 +145,12 @@ class FlwrFederatedCallback(keras.callbacks.Callback):
         updated_params, updated_metrics = self.node.update_parameters(
             params,
             num_examples=self.num_examples_per_epoch,
-            epoch=epoch,
+            epoch=effective_epoch,
             metrics=metrics,
         )
         self._federated_metrics = updated_metrics
 
-        self._save_metrics_after_aggregation(updated_metrics, node_id, epoch)
+        self._save_metrics_after_aggregation(updated_metrics, node_id, effective_epoch)
 
         # Update the keras model and keras logs.
         if updated_params is not None:
