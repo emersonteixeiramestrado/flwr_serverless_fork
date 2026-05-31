@@ -44,7 +44,7 @@ if __name__ == "__main__":
         "project": "cifar10_gcp_async_uuid_gcs",
         "epochs": 5,
         "batch_size": 32,
-        "steps_per_epoch": 50,
+        "steps_per_epoch": 5,
         "lr": 0.0005,
         "use_async": True,
         "federated_type": "concurrent",  # mantido para compatibilidade
