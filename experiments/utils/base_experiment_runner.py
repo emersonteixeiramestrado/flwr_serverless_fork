@@ -4,7 +4,7 @@ import numpy as np
 from experiments.model.simple_mnist_model import SimpleMnistModel
 from dataclasses import dataclass
 from experiments.model.keras_models import ResNetModelBuilder
-
+from typing import Optional, Dict, List, Any
 
 @dataclass
 class Config:
