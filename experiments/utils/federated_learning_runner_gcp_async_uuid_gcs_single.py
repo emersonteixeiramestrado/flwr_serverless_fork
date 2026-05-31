@@ -151,6 +151,10 @@ class FederatedLearningRunner(BaseExperimentRunner):
         x_train = self.partitioned_x_train[0]
         y_train = self.partitioned_y_train[0]
 
+        # lê faixa de delay configurada a partir do speed_group
+        delay_s_min = getattr(self.config, "delay_s_min", 0)
+        delay_s_max = getattr(self.config, "delay_s_max", 2)
+
         for round_idx in range(self.num_rounds):
             callbacks = [
                 FlwrFederatedCallback(
@@ -159,8 +163,8 @@ class FederatedLearningRunner(BaseExperimentRunner):
                 ),
                 NodeEpochLogger(
                     node_id=self.node_uuid,
-                    min_delay_s=0,
-                    max_delay_s=2,
+                    min_delay_s=delay_s_min,
+                    max_delay_s=delay_s_max,
                 ),
             ]
             if self.config.track:

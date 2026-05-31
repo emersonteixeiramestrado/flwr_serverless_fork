@@ -1,6 +1,7 @@
 import os
 import logging
 
+
 logging.getLogger("flwr_serverless").setLevel(logging.INFO)
 logging.basicConfig(
     level=logging.INFO,
@@ -61,8 +62,10 @@ if __name__ == "__main__":
         "storage_retry_sleep_time": 3,
         "storage_max_retry": 300,
         "storage_check_at_init": True,
+        "speed_group": "fast",
     }
 
+    # adiciona argumentos da linha de comando
     for key, value in base_config.items():
         if value is None:
             parser.add_argument(f"--{key}", default=value)
@@ -77,6 +80,20 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     config = vars(args)
+
+    # mapeia speed_group -> faixa de delay
+    speed_group = str(config["speed_group"]).lower()
+    if speed_group == "fast":
+        config["delay_s_min"] = 0
+        config["delay_s_max"] = 2
+    elif speed_group == "medium":
+        config["delay_s_min"] = 20
+        config["delay_s_max"] = 40
+    elif speed_group == "slow":
+        config["delay_s_min"] = 90
+        config["delay_s_max"] = 130
+    else:
+        raise ValueError("speed_group must be one of: fast, medium, slow")
 
     if config["storage_backend"] == "gcs" and not config["gcs_bucket"]:
         raise ValueError("gcs_bucket must be informed when storage_backend='gcs'")
