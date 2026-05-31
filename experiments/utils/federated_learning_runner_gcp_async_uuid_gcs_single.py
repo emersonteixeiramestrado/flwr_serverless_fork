@@ -48,7 +48,7 @@ class FederatedLearningRunner(BaseExperimentRunner):
                     "gcs_bucket must be provided when storage_backend='gcs'"
                 )
             directory = f"gs://{bucket}/{folder}" if folder else f"gs://{bucket}"
-            return GCSFolderWithPickle(directory)
+            return GCSFolderWithPickle(directory=directory)
         return InMemoryFolder()
 
     def run(self):
