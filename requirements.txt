@@ -2,3 +2,4 @@ flwr>=1.13
 python-dotenv
 tensorflow
 wandb
+keras-cv
