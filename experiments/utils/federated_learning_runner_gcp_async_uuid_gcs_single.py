@@ -3,9 +3,6 @@ import uuid
 from typing import Any
 
 from tensorflow.keras.utils import set_random_seed
-from wandb.integration.keras import WandbCallback
-
-from experiments.utils.node_logger_callback import NodeEpochLogger
 from flwr.common import ndarrays_to_parameters
 from flwr.server.strategy import (
     FedAvg,
@@ -14,14 +11,16 @@ from flwr.server.strategy import (
     FedOpt,
     FedMedian,
 )
+
 from flwr_serverless.federated_node.async_federated_node import AsyncFederatedNode
 from flwr_serverless.federated_node.sync_federated_node import SyncFederatedNode
 from flwr_serverless.keras.federated_learning_callback import FlwrFederatedCallback
 from flwr_serverless.shared_folder.in_memory_folder import InMemoryFolder
-from experiments.utils.base_experiment_runner import BaseExperimentRunner, Config
-from experiments.utils.custom_wandb_callback import CustomWandbCallback
-
 from flwr_serverless.shared_folder.gcs_folder import GCSFolderWithPickle
+
+from experiments.utils.base_experiment_runner import BaseExperimentRunner, Config
+from experiments.utils.node_logger_callback import NodeEpochLogger
+from experiments.utils.custom_wandb_callback import CustomWandbCallback
 
 
 class FederatedLearningRunner(BaseExperimentRunner):
@@ -38,6 +37,9 @@ class FederatedLearningRunner(BaseExperimentRunner):
         # backend de storage: GCS (prod) ou memória (teste)
         self.storage_backend: Any = self._build_storage_backend()
 
+    # ---------------------------------------------------------------------
+    # Storage backend
+    # ---------------------------------------------------------------------
     def _build_storage_backend(self) -> Any:
         backend = getattr(self.config, "storage_backend", "memory")
         if backend == "gcs":
@@ -51,6 +53,9 @@ class FederatedLearningRunner(BaseExperimentRunner):
             return GCSFolderWithPickle(directory=directory)
         return InMemoryFolder()
 
+    # ---------------------------------------------------------------------
+    # Execução principal
+    # ---------------------------------------------------------------------
     def run(self):
         config: Config = self.config
         if config.random_seed is not None:
@@ -81,12 +86,15 @@ class FederatedLearningRunner(BaseExperimentRunner):
         self.model = self.models[0]
 
         self.set_strategy()
+
+        # usa API nova de split baseada em índices
         (
             self.partitioned_x_train,
             self.partitioned_y_train,
             self.x_test,
             self.y_test,
         ) = self.split_data()
+
         print("x_test shape:", self.x_test.shape)
         print("y_test shape:", self.y_test.shape)
         print(f"Async node UUID for this process: {self.node_uuid}")
@@ -99,8 +107,10 @@ class FederatedLearningRunner(BaseExperimentRunner):
 
             wandb.finish()
 
+    # ---------------------------------------------------------------------
+    # Estratégia FL (apenas uma por nó)
+    # ---------------------------------------------------------------------
     def set_strategy(self):
-        # Uma única estratégia associada a este nó
         if self.strategy_name == "fedavg":
             self.strategy = FedAvg()
         elif self.strategy_name == "fedavgm":
@@ -118,17 +128,27 @@ class FederatedLearningRunner(BaseExperimentRunner):
         else:
             raise ValueError(f"Strategy not supported: {self.strategy_name}")
 
+    # ---------------------------------------------------------------------
+    # Split de dados usando BaseExperimentRunner
+    # ---------------------------------------------------------------------
     def split_data(self):
+        """Encaminha para os modos de split previstos na base."""
         config: Config = self.config
+
         if self.data_split == "random":
+            # alias na classe base deve existir: usa create_partitioned_datasets()
             return self.random_split()
         elif self.data_split == "partitioned":
             return self.create_partitioned_datasets()
         elif self.data_split == "skewed":
+            # alias na classe base deve existir: usa create_partitioned_datasets()
             return self.create_skewed_partition_split(skew_factor=config.skew_factor)
         else:
             raise ValueError("Data split not supported")
 
+    # ---------------------------------------------------------------------
+    # Criação de nó FL
+    # ---------------------------------------------------------------------
     def create_node(self):
         """Cria um único nó FL (assíncrono ou síncrono) para este processo."""
         if self.use_async:
@@ -143,11 +163,13 @@ class FederatedLearningRunner(BaseExperimentRunner):
             num_nodes=1,
         )
 
+    # ---------------------------------------------------------------------
+    # Treino local de um único nó
+    # ---------------------------------------------------------------------
     def train_single_node(self):
         node = self.create_node()
 
-        # Escolhe a partição deste nó (se houver várias partições pré-criadas)
-        # Aqui, por simplicidade, usa a partição 0.
+        # Usa partição 0 deste nó único
         x_train = self.partitioned_x_train[0]
         y_train = self.partitioned_y_train[0]
 
@@ -180,6 +202,9 @@ class FederatedLearningRunner(BaseExperimentRunner):
             )
             print(f"[node={self.node_uuid[:8]}] finished local epoch {round_idx}")
 
+    # ---------------------------------------------------------------------
+    # Avaliação
+    # ---------------------------------------------------------------------
     def evaluate(self):
         loss, acc = self.model.evaluate(
             self.x_test,
