@@ -57,6 +57,7 @@ class FederatedLearningRunner(BaseExperimentRunner):
     # Execução principal
     # ---------------------------------------------------------------------
     def run(self):
+        print("Effective Config in GCP runner:", self.config.__dict__)
         config: Config = self.config
         if config.random_seed is not None:
             set_random_seed(config.random_seed)
