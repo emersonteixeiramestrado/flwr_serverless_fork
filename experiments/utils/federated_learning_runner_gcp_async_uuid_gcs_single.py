@@ -87,7 +87,7 @@ class FederatedLearningRunner(BaseExperimentRunner):
 
         self.set_strategy()
 
-        # usa API nova de split baseada em índices
+        # usa API de split baseada em índices da classe base
         (
             self.partitioned_x_train,
             self.partitioned_y_train,
@@ -136,12 +136,13 @@ class FederatedLearningRunner(BaseExperimentRunner):
         config: Config = self.config
 
         if self.data_split == "random":
-            # alias na classe base deve existir: usa create_partitioned_datasets()
+            # alias na classe base: usa create_partitioned_datasets()
             return self.random_split()
         elif self.data_split == "partitioned":
+            # se você quiser um modo "partitioned", implemente na base
             return self.create_partitioned_datasets()
         elif self.data_split == "skewed":
-            # alias na classe base deve existir: usa create_partitioned_datasets()
+            # alias na classe base: usa create_partitioned_datasets()
             return self.create_skewed_partition_split(skew_factor=config.skew_factor)
         else:
             raise ValueError("Data split not supported")

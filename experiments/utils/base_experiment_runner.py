@@ -1,6 +1,6 @@
 import numpy as np
 from dataclasses import dataclass
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Optional, List, Tuple, Any
 
 from experiments.model.simple_mnist_model import SimpleMnistModel
 from experiments.model.keras_models import ResNetModelBuilder
@@ -56,7 +56,7 @@ class Config:
 
 
 class BaseExperimentRunner:
-    def __init__(self, config, tracking=False):
+    def __init__(self, config, tracking: bool = False):
         if isinstance(config, dict):
             config = Config(**config)
         assert isinstance(
@@ -130,9 +130,8 @@ class BaseExperimentRunner:
             x_test = np.expand_dims(x_test, -1)
 
             self.x_train, self.x_test = x_train, x_test
-            self.y_train, self.y_test = y_train.astype(np.int64), y_test.astype(
-                np.int64
-            )
+            self.y_train = y_train.astype(np.int64)
+            self.y_test = y_test.astype(np.int64)
 
         elif self.dataset == "cifar10":
             from tensorflow.keras.datasets import cifar10
@@ -158,7 +157,7 @@ class BaseExperimentRunner:
         """Gera índices aleatórios divididos em num_nodes partições."""
         num_samples = self.x_train.shape[0]
         indices = np.random.permutation(num_samples)
-        return np.array_split(indices, self.num_nodes)
+        return list(np.array_split(indices, self.num_nodes))
 
     def _skewed_indices_split(
         self, skew_factor: float = 0.8, num_classes: int = 10
@@ -184,7 +183,6 @@ class BaseExperimentRunner:
             raise RuntimeError("Class not found in any partition")
 
         part_indices: List[List[int]] = [[] for _ in range(self.num_nodes)]
-
         rng = np.random.default_rng(self.config.random_seed)
 
         for c in range(num_classes):
@@ -194,7 +192,7 @@ class BaseExperimentRunner:
                 if rng.random() < skew_factor:
                     part_indices[target_part].append(idx)
                 else:
-                    # joga aleatoriamente em outra partição
+                    # joga aleatoriamente em qualquer partição
                     random_part = int(rng.integers(0, self.num_nodes))
                     part_indices[random_part].append(idx)
 
@@ -206,7 +204,7 @@ class BaseExperimentRunner:
             p = p[perm]
             part_indices_np.append(p)
 
-            # debug de distribuição
+            # debug de distribuição (opcional)
             print(f"Partition {i}:")
             for c in range(num_classes):
                 print(f"  Label {c}: {(self.y_train[p] == c).sum()}")
@@ -245,12 +243,26 @@ class BaseExperimentRunner:
         return partitioned_x_train, partitioned_y_train, self.x_test, self.y_test
 
     # ---------------------------------------------------------------------
+    # COMPAT: interface antiga usada pelos runners
+    # ---------------------------------------------------------------------
+    def random_split(self):
+        """Compatibilidade com código antigo: usa modo 'random'."""
+        self.data_split = "random"
+        return self.create_partitioned_datasets()
+
+    def create_skewed_partition_split(self, skew_factor: float = 0.8, num_classes: int = 10):
+        """Compatibilidade com código antigo: usa modo 'skewed'."""
+        self.data_split = "skewed"
+        self.config.skew_factor = skew_factor
+        return self.create_partitioned_datasets()
+
+    # ---------------------------------------------------------------------
     # DATALOADER POR NÓ (usa índices)
     # ---------------------------------------------------------------------
     def get_train_dataloader_for_node(self, node_idx: int):
         """Iterador infinito de batches para um nó específico.
 
-        Aqui usamos self.partition_indices para buscar batches em self.x_train
+        Usa self.partition_indices para buscar batches em self.x_train
         e self.y_train sem criar cópias adicionais.
         """
         assert (
