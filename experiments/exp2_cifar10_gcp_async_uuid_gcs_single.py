@@ -43,8 +43,8 @@ if __name__ == "__main__":
     base_config = {
         "project": "cifar10_gcp_async_uuid_gcs",
         "epochs": 5,
-        "batch_size": 8,
-        "steps_per_epoch": 5,
+        "batch_size": 2,
+        "steps_per_epoch": 3,
         "lr": 0.0005,
         "use_async": True,
         "federated_type": "concurrent",  # mantido para compatibilidade
