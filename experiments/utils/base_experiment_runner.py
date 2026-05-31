@@ -8,14 +8,18 @@ from experiments.model.keras_models import ResNetModelBuilder
 
 @dataclass
 class Config:
-    # non shared config parameters
-    num_nodes: int
-    strategy: str
+    # ------------------------
+    # Parâmetros não-compartilhados
+    # ------------------------
+    num_nodes: int = 1                 # runner single-node
+    strategy: str = "fedavg"
     project: str = "experiments"
     track: bool = False
     random_seed: int = 0
 
-    # shared config parameters
+    # ------------------------
+    # Parâmetros compartilhados de FL
+    # ------------------------
     use_async: bool = True
     federated_type: str = "concurrent"
     dataset: str = "mnist"
@@ -23,13 +27,32 @@ class Config:
     batch_size: int = 32
     steps_per_epoch: int = 64
     lr: float = 0.001
-    test_steps: int = None
+    test_steps: Optional[int] = None
     net: str = "simple"
     data_split: str = "skewed"
     skew_factor: float = 0.9
 
-    # Ignore, for logging purposes
-    use_default_configs: bool = False
+    # ------------------------
+    # Backend de storage
+    # ------------------------
+    storage_backend: str = "memory"     # "gcs" ou "memory"
+    gcs_bucket: str = ""                # sem "gs://"
+    gcs_folder: str = ""                # prefixo dentro do bucket
+    storage_retry_sleep_time: int = 3
+    storage_max_retry: int = 300
+    storage_check_at_init: bool = True
+
+    # ------------------------
+    # Perfil de velocidade / delay
+    # ------------------------
+    speed_group: str = "fast"           # "fast", "medium", "slow"
+    delay_s_min: float = 0.0
+    delay_s_max: float = 2.0
+
+    # ------------------------
+    # Diversos
+    # ------------------------
+    use_default_configs: bool = False   # só p/ logging
 
 
 class BaseExperimentRunner:
