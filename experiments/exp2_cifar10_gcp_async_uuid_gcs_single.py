@@ -53,7 +53,7 @@ if __name__ == "__main__":
         "data_split": "random",
         "skew_factor": 0.9,
         "test_steps": None,
-        "net": "simple",
+        "net": "resnet18",
         "random_seed": 0,
         "track": False,
         "storage_backend": "gcs",
