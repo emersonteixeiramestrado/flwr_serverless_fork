@@ -23,9 +23,9 @@ class Config:
     use_async: bool = True
     federated_type: str = "concurrent"
     dataset: str = "mnist"
-    epochs: int = 100
-    batch_size: int = 32
-    steps_per_epoch: int = 64
+    epochs: int = 5
+    batch_size: int = 8
+    steps_per_epoch: int = 5
     lr: float = 0.001
     test_steps: Optional[int] = None
     net: str = "simple"
